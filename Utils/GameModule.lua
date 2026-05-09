@@ -14,6 +14,22 @@ return(function(Installer)
     local Configuration = Installer.Configurations
     local Settings = Installer.Settings
     local Connect = Installer.Connect
+    
+    -- Global error handler to suppress game's internal errors
+    local OldErrorHandler = (getgenv or getrenv or getfenv)().error
+    local function NewErrorHandler(msg, ...)
+        local msgStr = tostring(msg)
+        -- Suppress known game errors that don't affect our script
+        if msgStr:find("FireClientProjectile") or 
+           msgStr:find("CollectedDragonEgg") or 
+           msgStr:find("clientPart not found") or
+           msgStr:find("Lightning%-Lightning") or
+           msgStr:find("GetFeaturedFruits") then
+            return
+        end
+        return OldErrorHandler(msg, ...)
+    end
+    (getgenv or getrenv or getfenv)().error = NewErrorHandler
 
     local function fetch(file)
         local URL = string.format(
@@ -112,6 +128,40 @@ return(function(Installer)
     local Mobile: boolean = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and true) or false
 
     local SubmarineWorkerSpeak: RemoteFunction = Net:WaitForChild('RF/SubmarineWorkerSpeak')
+
+    -- Suppress common game errors that don't affect functionality
+    local OriginalWarn = warn
+    local SuppressedErrors = {
+        "attempt to index nil with 'Clone'",
+        "FireClientProjectile",
+        "CollectedDragonEgg",
+        "clientPart not found",
+        "Lightning%-Lightning",
+        "Pain%-Pain",
+        "GetFeaturedFruits",
+        "Failed to find RemoteEvent"
+    }
+    
+    warn = function(...)
+        local message = tostring(...)
+        for _, pattern in ipairs(SuppressedErrors) do
+            if message:find(pattern) then
+                return -- Suppress this error
+            end
+        end
+        return OriginalWarn(...)
+    end
+    
+    -- Safe WaitForChild with timeout
+    local function SafeWaitForChild(parent, childName, timeout)
+        local success, result = pcall(function()
+            return parent:WaitForChild(childName, timeout or 5)
+        end)
+        if success then
+            return result
+        end
+        return nil
+    end
 
     local empty = (function(...) return (...) end)
 
