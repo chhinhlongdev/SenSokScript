@@ -20,8 +20,17 @@ local function fetch(file)
     )
 
     warn("Fetch : ", file)
+    
+    local success, result = pcall(function()
+        return loadstring(game:HttpGet(URL))()
+    end)
+    
+    if not success then
+        warn("Failed to fetch " .. file .. ": " .. tostring(result))
+        return nil
+    end
 
-    return loadstring(game:HttpGet(URL))()
+    return result
 end
 
 local function AddModule(Name, Module)
@@ -253,7 +262,14 @@ AddModule("Parallels", function()
                     _ENV.RunningOption, _ENV.RunningMethod = nil, nil
                 end
 
+                local lastCheck = tick()
                 while task.wait(0) do
+                    -- Check every 0.5 seconds to reduce CPU usage
+                    if tick() - lastCheck < 0.1 then
+                        task.wait(0.1)
+                    end
+                    lastCheck = tick()
+                    
                     if _ENV.__THREAD_HASH ~= THREAD_HASH then
                         _ENV.RunningOption, _ENV.RunningMethod = nil, nil
                         _ENV.OnFarm = false
@@ -420,7 +436,13 @@ AddModule("Plugins", function()
     local Asset = Utils.Asset
     
     local Enabled, Options = Parallels.Options()
-    local Library = fetch('Utils/Library.lua')
+    
+    -- Cache Library to prevent multiple fetches
+    local Library = _ENV.__LIBRARY_CACHE
+    if not Library then
+        Library = fetch('Utils/Library.lua')
+        _ENV.__LIBRARY_CACHE = Library
+    end
     
     function Plugins:Window(Info)
         self['Base'] = Library:Window({

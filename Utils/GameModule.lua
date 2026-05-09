@@ -21,7 +21,16 @@ return(function(Installer)
             Owner, Repository, file
         )
 
-        return loadstring(game:HttpGet(URL))()
+        local success, result = pcall(function()
+            return loadstring(game:HttpGet(URL))()
+        end)
+        
+        if not success then
+            warn("Failed to fetch " .. file .. ": " .. tostring(result))
+            return nil
+        end
+
+        return result
     end
 
     local function AddModule(Name, Insert)
