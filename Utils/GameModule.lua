@@ -69,6 +69,18 @@ return(function(Installer)
     local NPCs: Folder = workspace:WaitForChild('NPCs')
 
     local ReplicatedNPCs: Folder = ReplicatedStorage:WaitForChild('NPCs')
+    
+    -- Protect against NPC parent locking errors
+    local function SafeSetParent(instance, newParent)
+        local success, err = pcall(function()
+            instance.Parent = newParent
+        end)
+        if not success then
+            -- Silently ignore parent locking errors
+            return false
+        end
+        return true
+    end
 
     local EnemySpawns: Folder = WorldOrigin:WaitForChild("EnemySpawns")
     local Locations: Folder = WorldOrigin:WaitForChild("Locations")
@@ -934,7 +946,7 @@ return(function(Installer)
 
             local CloneAttachment = Attachment:Clone()
             local AlignPosition = CloneAttachment.AlignPosition
-            CloneAttachment.Parent = RootPart
+            pcall(function() CloneAttachment.Parent = RootPart end)
 
             while Enemy and Enemy.Parent == Enemies and Enemy:HasTag(BRING_TAG) do
                 if not Humanoid or Humanoid.Health <= 0 then break end
@@ -1039,7 +1051,7 @@ return(function(Installer)
             BodyVelocity.P = 1000
         end
 
-        BodyVelocity.Parent = HumanoidRootPart
+        pcall(function() BodyVelocity.Parent = HumanoidRootPart end)
 
         local Highlight = Instance.new("Highlight") do
             Highlight.FillColor = Color3.fromRGB(255, 255, 255)
@@ -1107,20 +1119,20 @@ return(function(Installer)
 
             if _ENV.OnFarm and BasePart and Humanoid and Humanoid.Health > 0 then
                 if BodyVelocity.Parent ~= BasePart then
-                    BodyVelocity.Parent = BasePart
+                    pcall(function() BodyVelocity.Parent = BasePart end)
                 end
 
                 if Highlight.Parent ~= Character then
-                    Highlight.Parent = Character
+                    pcall(function() Highlight.Parent = Character end)
                 end
             elseif BodyVelocity.Parent then
-                BodyVelocity.Parent = nil
-                Highlight.Parent = nil
+                pcall(function() BodyVelocity.Parent = nil end)
+                pcall(function() Highlight.Parent = nil end)
             end
 
             if BodyVelocity.Velocity ~= Vector3.zero and (not Humanoid or not Humanoid.SeatPart or not _ENV.OnFarm) then
                 BodyVelocity.Velocity = Vector3.zero
-                Highlight.Parent = nil
+                pcall(function() Highlight.Parent = nil end)
             end
         end
 
@@ -2418,7 +2430,7 @@ return(function(Installer)
             TextLabel.TextColor3 = type(self.EspColor) == "function" and self.EspColor(Instance) or self.EspColor or DefaultEspColor
             TextLabel.Text = self.CustomInstanceName or "..."
             TextLabel.TextSize = self.EspSize or TextLabel.TextSize
-            BoxHandleAdornment.Parent = self.EspFolder
+            pcall(function() BoxHandleAdornment.Parent = self.EspFolder end)
 
             self.EspObjects[Instance] = Esp
             Esp.BoxHandleAdornment = BoxHandleAdornment
